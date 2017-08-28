@@ -11,10 +11,11 @@ using namespace std;
 typedef pair<string, unsigned int> item;
 
 class ConcurrentHashMap{
+	private:
+		unsigned int hash(string s);
 	public:
 		Lista<item>* tabla[26];
-
-	public:
+		ConcurrentHashMap();
 		void addAndInc(string key);
 		bool member(string key);
 		item maximum(unsigned int nt);
