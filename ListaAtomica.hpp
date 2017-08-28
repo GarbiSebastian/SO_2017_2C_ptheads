@@ -31,7 +31,7 @@ public:
 		Nodo nuevo = Nodo(val);
 		//inicio atómico
 		nuevo._next = this->_head.load();
-		this->_head.store(nuevo);
+		//this->_head.store(nuevo);
 		//fin atómico
 	}
 

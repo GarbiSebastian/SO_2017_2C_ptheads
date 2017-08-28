@@ -41,6 +41,7 @@ item ConcurrentHashMap::maximum(unsigned int nt){
 ConcurrentHashMap ConcurrentHashMap::count_words(string arch){
 	ConcurrentHashMap a;
 	FILE * fd = fopen(arch.c_str(),"r");
+	
 	fclose(fd);
 	return a;
 }
