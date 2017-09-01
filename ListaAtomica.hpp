@@ -2,89 +2,103 @@
 #define LISTA_ATOMICA_H__
 
 #include <atomic>
+#include <pthread.h>
 
 template <typename T>
 class Lista {
 private:
-	struct Nodo {
-		Nodo(const T& val) : _val(val), _next(nullptr) {}
-		T _val;
-		Nodo *_next;
-	};
 
-	std::atomic<Nodo *> _head;
+    struct Nodo {
+
+        Nodo(const T& val) : _val(val), _next(nullptr) {
+        }
+        T _val;
+        Nodo *_next;
+    };
+
+    std::atomic<Nodo *> _head;
+    pthread_mutex_t insert_lock;
 
 public:
-	Lista() : _head(nullptr) {}
-	~Lista() {
-		Nodo *n, *t;
-		n = _head.load();
-		while (n) {
-			t = n;
-			n = n->_next;
-			delete t;
-		}
-	}
 
-	void push_front(const T& val) {
-		/* Completar. Debe ser atómico. */
-		Nodo nuevo = Nodo(val);
-		//inicio atómico
-		nuevo._next = this->_head.load();
-		//this->_head.store(nuevo);
-		//fin atómico
-	}
+    Lista() : _head(nullptr) {
+        pthread_mutex_init(&insert_lock, NULL);
+    }
 
-	T& front() const {
-		return _head.load()->_val;
-	}
+    ~Lista() {
+        Nodo *n, *t;
+        n = _head.load();
+        while (n) {
+            t = n;
+            n = n->_next;
+            delete t;
+        }
+    }
 
-	T& iesimo(int i) const {
-		Nodo *n = _head.load();
-		int j;
-		for (int j = 0; j < i; j++)
-			n = n->_next;
-		return n->_val;
-	}
+    void push_front(const T& val) {
+        /* Completar. Debe ser atómico. */
+        Nodo* nuevo = new Nodo(val);
+        //inicio atómico
+        pthread_mutex_lock(&insert_lock);
+        nuevo->_next = this->_head.load();
+        this->_head.store(nuevo);
+        pthread_mutex_unlock(&insert_lock);
+        //fin atómico
+    }
 
-	class Iterador {
-	public:
-		Iterador() : _lista(nullptr), _nodo_sig(nullptr) {}
+    T& front() const {
+        return _head.load()->_val;
+    }
 
-		Iterador& operator = (const typename Lista::Iterador& otro) {
-			_lista = otro._lista;
-			_nodo_sig = otro._nodo_sig;
-			return *this;
-		}
+    T& iesimo(int i) const {
+        Nodo *n = _head.load();
+        int j;
+        for (int j = 0; j < i; j++)
+            n = n->_next;
+        return n->_val;
+    }
 
-		bool HaySiguiente() const {
-			return _nodo_sig != nullptr;
-		}
+    class Iterador {
+    public:
 
-		T& Siguiente() {
-			return _nodo_sig->_val;
-		}
+        Iterador() : _lista(nullptr), _nodo_sig(nullptr) {
+        }
 
-		void Avanzar() {
-			_nodo_sig = _nodo_sig->_next;
-		}
+        Iterador& operator=(const typename Lista::Iterador& otro) {
+            _lista = otro._lista;
+            _nodo_sig = otro._nodo_sig;
+            return *this;
+        }
 
-		bool operator == (const typename Lista::Iterador& otro) const {
-			return _lista._head.load() == otro._lista._head.load() && _nodo_sig == otro._nodo_sig;
-		}
+        bool HaySiguiente() const {
+            return _nodo_sig != nullptr;
+        }
 
-	private:
-		Lista *_lista;
+        T& Siguiente() {
+            return _nodo_sig->_val;
+        }
 
-		typename Lista::Nodo *_nodo_sig;
+        void Avanzar() {
+            _nodo_sig = _nodo_sig->_next;
+        }
 
-		Iterador(Lista<T>* lista,typename Lista<T>::Nodo* sig) : _lista(lista), _nodo_sig(sig) {}
-		friend typename Lista<T>::Iterador Lista<T>::CrearIt();
-	};
+        bool operator==(const typename Lista::Iterador& otro) const {
+            return _lista._head.load() == otro._lista._head.load() && _nodo_sig == otro._nodo_sig;
+        }
 
-	Iterador CrearIt() {
-		return Iterador(this, _head);
-	}
+    private:
+        Lista *_lista;
+
+        typename Lista::Nodo *_nodo_sig;
+
+        Iterador(Lista<T>* lista, typename Lista<T>::Nodo* sig) : _lista(lista), _nodo_sig(sig) {
+        }
+        friend typename Lista<T>::Iterador Lista<T>::CrearIt();
+    };
+
+    Iterador CrearIt() {
+        return Iterador(this, _head);
+    }
 };
 
 #endif /* LISTA_ATOMICA_H__ */
