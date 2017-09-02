@@ -16,9 +16,11 @@ private:
     unsigned int hash(string s);
     pthread_mutex_t aai[26];
     void processFile(string arch);
+    void processFile(void* cosa);
 public:
     Lista<item>* tabla[26];
     ConcurrentHashMap();
+    ~ConcurrentHashMap();
     void addAndInc(string key);
     bool member(string key);
     item maximum(unsigned int nt);

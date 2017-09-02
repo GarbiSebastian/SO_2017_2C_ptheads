@@ -21,10 +21,21 @@ void ConcurrentHashMap::processFile(string arch) {
     archivo.close();
 }
 
+void ConcurrentHashMap::processFile(void* cosa) {
+
+}
+
 ConcurrentHashMap::ConcurrentHashMap() {
     for (int i = 0; i < 26; i++) {
         this->tabla[i] = new Lista<item>();
         pthread_mutex_init(&aai[i], NULL);
+    }
+}
+
+ConcurrentHashMap::~ConcurrentHashMap() {
+    for (int i = 0; i < 26; i++) {
+        free(this->tabla[i]);
+        pthread_mutex_destroy(&aai[i]);
     }
 }
 
@@ -64,8 +75,14 @@ ConcurrentHashMap ConcurrentHashMap::count_words(string arch) {
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
-    ConcurrentHashMap a;
-    return a;
+    ConcurrentHashMap hashMap;
+    pthread_t hilos[archs.size()];
+    for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
+        //aca se abre un pthread y se le pasa la funcion processFile con *it
+        //pthread_create()
+    }
+    //cout << '\n';
+    return hashMap;
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {

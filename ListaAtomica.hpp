@@ -33,6 +33,7 @@ public:
             n = n->_next;
             delete t;
         }
+        pthread_mutex_destroy(&insert_lock);
     }
 
     void push_front(const T& val) {
