@@ -16,7 +16,18 @@ private:
     unsigned int hash(string s);
     pthread_mutex_t aai[26];
     void processFile(string arch);
-    void processFile(void* cosa);
+    static void* f(void * cosa);
+
+    struct Cosa {
+
+        Cosa(ConcurrentHashMap* hashMap, string arch) :
+        _hashMap(hashMap),
+        _arch(arch) {
+        }
+
+        ConcurrentHashMap* _hashMap;
+        string _arch;
+    };
 public:
     Lista<item>* tabla[26];
     ConcurrentHashMap();

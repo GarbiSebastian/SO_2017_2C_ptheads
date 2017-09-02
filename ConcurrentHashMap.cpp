@@ -13,16 +13,16 @@ void ConcurrentHashMap::processFile(string arch) {
     ifstream archivo;
     string linea;
     archivo.open(arch.c_str());
-    while (!archivo.eof()) {
-        archivo >> linea;
-        //cout << linea << endl;
+    while (archivo >> linea) {
         this->addAndInc(linea);
     }
     archivo.close();
 }
 
-void ConcurrentHashMap::processFile(void* cosa) {
-
+void* ConcurrentHashMap::f(void* cosa) {
+    Cosa* c = (Cosa*) cosa;
+    c->_hashMap->processFile(c->_arch);
+    return NULL;
 }
 
 ConcurrentHashMap::ConcurrentHashMap() {
@@ -33,13 +33,14 @@ ConcurrentHashMap::ConcurrentHashMap() {
 }
 
 ConcurrentHashMap::~ConcurrentHashMap() {
-    for (int i = 0; i < 26; i++) {
-        free(this->tabla[i]);
-        pthread_mutex_destroy(&aai[i]);
-    }
+    //    for (int i = 0; i < 26; i++) {
+    //        free(this->tabla[i]);
+    //        pthread_mutex_destroy(&aai[i]);
+    //    }
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
+
     item* t;
     bool encontre = false;
     int hashKey = this->hash(key);
@@ -76,12 +77,20 @@ ConcurrentHashMap ConcurrentHashMap::count_words(string arch) {
 
 ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
     ConcurrentHashMap hashMap;
-    pthread_t hilos[archs.size()];
+    unsigned int cant_hilos = archs.size();
+    pthread_t hilos[cant_hilos];
+    int h_id = 0;
     for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
-        //aca se abre un pthread y se le pasa la funcion processFile con *it
-        //pthread_create()
+        cerr << "archivo " << *it << " hilo " << h_id << endl;
+        Cosa* cosa = new Cosa(&hashMap, *it);
+        //hashMap.processFile(*it);
+        //aca se abre un pthread
+        pthread_create(&(hilos[h_id]), NULL, f, &cosa);
+        h_id++;
     }
-    //cout << '\n';
+    for (int i = 0; i < cant_hilos; i++) {
+        pthread_join(hilos[i], NULL);
+    }
     return hashMap;
 }
 
