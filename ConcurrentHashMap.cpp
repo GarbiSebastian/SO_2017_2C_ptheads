@@ -4,6 +4,7 @@ using namespace std;
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include <typeinfo>
 
 unsigned int ConcurrentHashMap::hash(string s) {
     return (int) (s.at(0)) - 97;
@@ -14,6 +15,7 @@ void ConcurrentHashMap::processFile(string arch) {
     string linea;
     archivo.open(arch.c_str());
     while (archivo >> linea) {
+        //cerr << linea << endl;
         this->addAndInc(linea);
     }
     archivo.close();
@@ -21,6 +23,7 @@ void ConcurrentHashMap::processFile(string arch) {
 
 void* ConcurrentHashMap::f(void* cosa) {
     Cosa* c = (Cosa*) cosa;
+    //    cerr << "llame a cosa con " << c->_arch << " <-" << endl;
     c->_hashMap->processFile(c->_arch);
     return NULL;
 }
@@ -76,27 +79,45 @@ ConcurrentHashMap ConcurrentHashMap::count_words(string arch) {
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
-    ConcurrentHashMap hashMap;
+    ConcurrentHashMap* hashMap = new ConcurrentHashMap();
     unsigned int cant_hilos = archs.size();
     pthread_t hilos[cant_hilos];
+    Cosa * cosa[cant_hilos];
     int h_id = 0;
     for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
-        cerr << "archivo " << *it << " hilo " << h_id << endl;
-        Cosa* cosa = new Cosa(&hashMap, *it);
-        //hashMap.processFile(*it);
-        //aca se abre un pthread
-        pthread_create(&(hilos[h_id]), NULL, f, &cosa);
+        //SIN HILOS
+        //hashMap->processFile(*it);
+        //CON HILOS
+        cosa[h_id] = new Cosa(hashMap, *it);
+        pthread_create(&(hilos[h_id]), NULL, f, (void*) (cosa[h_id]));
         h_id++;
     }
-    for (int i = 0; i < cant_hilos; i++) {
-        pthread_join(hilos[i], NULL);
+    for (h_id = 0; h_id < cant_hilos; h_id++) {
+        pthread_join(hilos[h_id], NULL);
+        free(cosa[h_id]);
     }
-    return hashMap;
+    return *hashMap;
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {
-    ConcurrentHashMap a;
-    return a;
+    ConcurrentHashMap* hashMap = new ConcurrentHashMap();
+    //    unsigned int cant_archivos = archs.size();
+    //    pthread_t hilos[n];
+    //    Cosa * cosa[n];
+    //    int h_id = 0;
+    //    for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
+    //        //SIN HILOS
+    //        //hashMap->processFile(*it);
+    //        //CON HILOS
+    //        cosa[h_id] = new Cosa(hashMap, *it);
+    //        pthread_create(&(hilos[h_id]), NULL, f, (void*) (cosa[h_id]));
+    //        h_id++;
+    //    }
+    //    for (h_id = 0; h_id < cant_archivos; h_id++) {
+    //        pthread_join(hilos[h_id], NULL);
+    //        free(cosa[h_id]);
+    //    }
+    return *hashMap;
 }
 
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
