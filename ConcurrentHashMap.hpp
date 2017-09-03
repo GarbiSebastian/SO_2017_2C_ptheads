@@ -8,6 +8,7 @@ using namespace std;
 #include "ListaAtomica.hpp"
 #include <list>
 #include <pthread.h>
+#include <semaphore.h>
 
 typedef pair<string, unsigned int> item;
 
@@ -20,6 +21,7 @@ private:
     pthread_mutex_t aai[maxLength];
     void processFile(string arch);
     static void* f(void * cosa);
+    static void* g(void * cosa);
 
     struct Cosa {
 

@@ -1,0 +1,36 @@
+ soy main y voy a trabajar con 5 hilos  y 5 archivos
+soy main y voy a crear cosa para el archivo corpus-0 en hilo 0
+soy main y voy a crear el hilo 0
+soy main y voy a crear cosa para el archivo corpus-1 en hilo 1
+soy main y voy a crear el hilo 1
+soy main y voy a crear cosa para el archivo corpus-2 en hilo 2
+soy main y voy a crear el hilo 2
+soy main y voy a crear cosa para el archivo corpus-3 en hilo 3
+soy main y voy a crear el hilo 3
+soy main y voy a crear cosa para el archivo corpus-4 en hilo 4
+soy main y voy a crear el hilo 4
+soy 0 y pido el mutex 
+soy 0 y tengo el mutex 
+soy 0 y libere el  mutex 
+soy 0 y te mande un signal 
+0: 1
+soy 1 y pido el mutex 
+soy 1 y tengo el mutex 
+soy 1 y libere el  mutex 
+soy 1 y te mande un signal 
+1: 1
+soy 2 y pido el mutex 
+soy 2 y tengo el mutex 
+soy 2 y libere el  mutex 
+soy 2 y te mande un signal 
+soy 3 y pido el mutex 
+soy 3 y tengo el mutex 
+soy 3 y libere el  mutex 
+soy 3 y te mande un signal 
+soy 4 y pido el mutex 
+soy 4 y tengo el mutex 
+soy 4 y libere el  mutex 
+soy 4 y te mande un signal 
+2: 1
+3: 1
+4: 1

@@ -38,8 +38,11 @@ test-3: $(OBJ) test-3.cpp
 test-3-run: test-3
 	awk -f corpus.awk corpus | sort >corpus-post
 	for i in 0 1 2 3 4; do sed -n "$$((i * 500 + 1)),$$(((i + 1) * 500))p" corpus >corpus-"$$i"; done
-	for i in 0 1 2 3 4; do ./test-3 $$((i + 1)) | sort | diff -u - corpus-post; done
+	for i in 0 1 2 3 4; do ./test-3 $$((i + 1)) 2> test-3-salida-error | sort | diff -u - corpus-post; done
 	rm -f corpus-post corpus-[0-4]
+
+seba: test-3
+	./test-3 2 >/dev/null
 
 test-4: $(OBJ) test-4.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ test-4.cpp $(OBJ) $(LDLIBS)
