@@ -23,10 +23,22 @@ private:
         Cosa(ConcurrentHashMap* hashMap, string arch) :
         _hashMap(hashMap),
         _arch(arch) {
+            _conMutex = false;
+        }
+
+        Cosa(ConcurrentHashMap* hashMap, string arch, unsigned int h_id, pthread_mutex_t &mutex) :
+        _hashMap(hashMap),
+        _arch(arch),
+        _h_id(h_id),
+        _mutex(mutex) {
+            _conMutex = true;
         }
 
         ConcurrentHashMap* _hashMap;
         string _arch;
+        unsigned int _h_id;
+        pthread_mutex_t _mutex;
+        bool _conMutex;
     };
 public:
     Lista<item>* tabla[26];
