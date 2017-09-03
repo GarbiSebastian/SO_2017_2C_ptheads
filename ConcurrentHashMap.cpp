@@ -37,14 +37,14 @@ void* ConcurrentHashMap::f(void* cosa) {
 void* ConcurrentHashMap::g(void* cosa) {
     Cosa* c = (Cosa*) cosa;
     c->_hashMap->processFile(c->_arch);
-    cerr << "soy " << c->_h_id << " y pido el mutex " << endl;
+    cerr << "soy hilo " << c->_h_id << " y pido el mutex " << endl;
     pthread_mutex_lock(&libre_mutex);
-    cerr << "soy " << c->_h_id << " y tengo el mutex " << endl;
+    cerr << "soy hilo " << c->_h_id << " y tengo el mutex " << endl;
     libre[c->_h_id] = true;
     pthread_mutex_unlock(&libre_mutex);
-    cerr << "soy " << c->_h_id << " y libere el  mutex " << endl;
+    cerr << "soy hilo " << c->_h_id << " y libere el  mutex " << endl;
     sem_post(&sem_c); //sumo un hilo terminado en el contador de terminados
-    cerr << "soy " << c->_h_id << " y te mande un signal " << endl;
+    cerr << "soy hilo " << c->_h_id << " y te mande un signal " << endl;
     return NULL;
 }
 
@@ -199,8 +199,8 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
     ConcurrentHashMap* hashMap = new ConcurrentHashMap();
     unsigned int cant_archivos = archs.size();
     unsigned int cant_hilos = min(n, cant_archivos); //voy a crear a lo sumo cant achivos hilos por mas que n sea mayor
-
-    cerr << " soy main y voy a trabajar con " << cant_hilos << " hilos " << " y " << cant_archivos << " archivos" << endl;
+    cerr << "Hola Soy main, quizas me recuerden de otros TPs como OrgaII y AlgoIII" << endl;
+    cerr << "soy main y voy a trabajar con " << cant_hilos << " hilos " << " y " << cant_archivos << " archivos" << endl;
 
     pthread_t hilo[cant_hilos];
     int h_id = 0;
@@ -247,9 +247,9 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
         cerr << "soy main y liberé el mutex" << endl;
         //se que el hilo h_id terminó porque aparece en libre y liberó el mutex, y eso es lo ultimo que hace antes del return
         pthread_join(hilo[h_id], NULL); //espero a que haga el return a lo sumo
-        cerr << " soy main y joinie el hilo " << h_id << endl;
+        cerr << "soy main y joinie el hilo " << h_id << endl;
         free(cosa[h_id]);
-        cerr << " soy main y libere " << h_id << endl;
+        cerr << "soy main y libere " << h_id << endl;
         cosa[h_id] = new Cosa(hashMap, *it, h_id);
         pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
         ++it;
@@ -258,7 +258,6 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
 
     for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
-        cerr << h_id << ": " << libre[h_id] << endl;
     }
     sem_destroy(&sem_c);
     return *hashMap;
