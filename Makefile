@@ -11,12 +11,16 @@ DEBUG = -g
 	$(CXX) $(CXXFLAGS) -c $<
 	$(CXX) $(CXXFLAGS) -c $(DEBUG) $<
 
-BIN = test-2 test-3 test-4 test-5
+BIN = test-1 test-2 test-3 test-4 test-5
 OBJ = ConcurrentHashMap.o
 
 all: $(BIN)
 
 $(BIN): ListaAtomica.hpp
+
+test-1: $(OBJ) test-1.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ test-1.cpp $(OBJ) $(LDLIBS)
+#	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEBUG) -o $@ test-1.cpp $(OBJ) $(LDLIBS)
 
 test-2: $(OBJ) test-2.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ test-2.cpp $(OBJ) $(LDLIBS)
