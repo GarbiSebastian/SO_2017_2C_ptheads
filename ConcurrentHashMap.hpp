@@ -11,12 +11,17 @@ using namespace std;
 
 typedef pair<string, unsigned int> item;
 
+
 class ConcurrentHashMap {
 private:
+    
+    static const unsigned int maxLength = 26; 
+    
     unsigned int hash(string s);
-    pthread_mutex_t aai[26];
+    pthread_mutex_t aai[maxLength];
     void processFile(string arch);
     static void* f(void * cosa);
+
 
     struct Cosa {
 
