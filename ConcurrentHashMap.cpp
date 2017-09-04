@@ -264,6 +264,73 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
     return *hashMap;
 }
 
+item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
+    ConcurrentHashMap hashMap;
+    //list<string>::iterator it = archs.begin();
+    for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
+        hashMap->processFile(*it);
+    }
+    return hashMap->maximum(p_maximos);
+}
+
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
-    return make_pair("Hola", 3);
+    ConcurrentHashMap hashMap;
+    int maximos_hilos = 0;
+    if (p_archivos > p_maximos) {
+        maximos_hilos = p_archivos;
+    } else {
+        maximos_hilos = p_maximos;
+    }
+    pthread_t hilo[p_maximos];
+    int j = 0;
+    Cosa * v[archs.size()];
+    int h_id = 0;
+    list<string>::iterator it = archs.begin();
+    while (j < archs.size()) {
+        // Se lanzan los p_archivos threads (o los que restan por lanzar)
+        for (int i = 0; i < min(p_archivos, archs.size() - j); i++) {
+            v[h_id] = new Cosa(hashMap, *it);
+            pthread_create(&(hilo[i]), NULL, f, (void*) (v[h_id]));
+            h_id++;
+            ++it;
+        }
+        for (int i = 0; i < min(p_archivos, archs.size() - j); i++) {
+            pthread_join(hilo[i], NULL);
+            //free(v[h_id]);
+        }
+        j += p_archivos;
+    }
+    j = 0;
+    while (j < archs.size()) {
+        free(v[j]);
+        j++;
+    }
+    //se calcula el maximo
+    for (int i = 0; i < maxLength; i++) {
+        pthread_mutex_lock(&(aai[i]));
+    }
+    string maxKey = "";
+    int maxValue = 0;
+    item * maximosXFila[maxLength];
+    j = 0;
+    while (j < maxLength) {
+        for (int i = 0; i < min(p_maximos, maxLength - j); i++) {
+            pthread_create(&(hilo[i]), NULL, &procesarFila, hashMap->tabla[j + i]);
+        }
+        for (int i = 0; i < min(p_maximos, maxLength - j); i++) {
+            pthread_join(hilo[i], (void**) (&maximosXFila[j + i]));
+        }
+        j += p_maximos;
+    }
+    for (int i = 0; i < maxLength; i++) {
+        if(maxValue < maximosXFila[i]->second) {
+            maxKey = maximosXFila[i]->first;
+            maxValue = maximosXFila[i]->second;
+        }
+        delete maximosXFila[i];
+    }
+    for (int i = 0; i < maxLength; i++) {
+        pthread_mutex_unlock(&(aai[i]));
+    }
+    return make_pair(maxKey, maxValue);
 }
