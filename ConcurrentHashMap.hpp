@@ -53,8 +53,8 @@ public:
     static ConcurrentHashMap count_words(string arch);
     static ConcurrentHashMap count_words(list<string> archs);
     static ConcurrentHashMap count_words(unsigned int n, list<string> archs);
-    static item maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
-
+    static item maximum(unsigned int p_maximos, list<string> archs);
+	static item maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
 
 };
 

@@ -274,7 +274,10 @@ item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
 }
 
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
-    ConcurrentHashMap hashMap;
+	ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(p_archivos,archs);
+	return hashMap->maximum(p_maximos);
+	
+    /*ConcurrentHashMap hashMap;
     int maximos_hilos = 0;
     if (p_archivos > p_maximos) {
         maximos_hilos = p_archivos;
@@ -332,5 +335,5 @@ item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos,
     for (int i = 0; i < maxLength; i++) {
         pthread_mutex_unlock(&(aai[i]));
     }
-    return make_pair(maxKey, maxValue);
+    return make_pair(maxKey, maxValue);*/
 }
