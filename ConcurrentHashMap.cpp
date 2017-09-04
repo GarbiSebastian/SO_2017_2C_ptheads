@@ -268,14 +268,14 @@ item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap;
     //list<string>::iterator it = archs.begin();
     for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
-        hashMap->processFile(*it);
+        hashMap.processFile(*it);
     }
-    return hashMap->maximum(p_maximos);
+    return hashMap.maximum(p_maximos);
 }
 
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
 	ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(p_archivos,archs);
-	return hashMap->maximum(p_maximos);
+	return hashMap.maximum(p_maximos);
 	
     /*ConcurrentHashMap hashMap;
     int maximos_hilos = 0;
