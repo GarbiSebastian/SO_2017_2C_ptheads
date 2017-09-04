@@ -56,10 +56,10 @@ ConcurrentHashMap::ConcurrentHashMap() {
 }
 
 ConcurrentHashMap::~ConcurrentHashMap() {
-    //    for (int i = 0; i < maxLength; i++) {
-    //        free(this->tabla[i]);
-    //        pthread_mutex_destroy(&aai[i]);
-    //    }
+        /*for (int i = 0; i < maxLength; i++) {
+            delete this->tabla[i];
+            pthread_mutex_destroy(&aai[i]);
+        }*/
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
@@ -100,26 +100,25 @@ bool ConcurrentHashMap::member(string key) {
     return false;
 }
 
-void* procesarFila(void * l) {
+void* procesarFila(void* lista) {
 
-    Lista<item>* lista = (Lista<item>*) l;
+    string maxKey = "";
+    int maxValue = 0;
+    auto it = ((Lista<item>*) lista)->CrearIt();
 
-    item* maximo = NULL;
-    item* itemActual;
-
-    auto it = lista->CrearIt();
     while (it.HaySiguiente()) {
-        itemActual = &(it.Siguiente());
-        if (maximo != NULL && maximo->second > itemActual->second) {
-            maximo = itemActual;
+        item itemActual = it.Siguiente();
+
+        if (maxValue < itemActual.second) {
+            maxKey = itemActual.first;
+            maxValue = itemActual.second;
         }
 
         it.Avanzar();
     }
-
-    cout << "max: " << maximo << endl;
-    return maximo;
-    //pthread_exit(maximo);
+    
+    return (void*) (new item(maxKey, maxValue));
+    //return (void*) (make_pair(maxKey, maxValue));
 }
 
 item ConcurrentHashMap::maximum(unsigned int nt) {
@@ -128,7 +127,8 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
         pthread_mutex_lock(&(aai[i])); // Bloqueo todo el  array
     }
 
-    item * maximo = new item("TEST-SO", 0); //NULL;
+    string maxKey = "";
+    int maxValue = 0;
     item * maximosXFila[maxLength];
     int filaActual = 0;
 
@@ -140,13 +140,13 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
 
         // Se lanzan los nt threads (o los que restan por lanzar)
         for (int i = 0; i < min(nt, maxLength - filaActual); i++) {
-            pthread_create(&(threads[i]), NULL, &procesarFila, &(tabla[filaActual + i]));
+            pthread_create(&(threads[i]), NULL, &procesarFila, tabla[filaActual + i]);
         }
 
         // Recolecto el resultado de la ejecucion de los threads,
         // y si no terminaron se los espera
         for (int i = 0; i < min(nt, maxLength - filaActual); i++) {
-            pthread_join(threads[i], (void**) (&(maximosXFila[filaActual + i])));
+            pthread_join(threads[i], (void**) (&maximosXFila[filaActual + i]));
         }
 
         filaActual += nt;
@@ -154,18 +154,19 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
 
     // se busca el maximo del ConcurentHasmap
     for (int i = 0; i < maxLength; i++) {
-        /*if(maximo->second < maximosXFila[i]->second) {
-            maximo = maximosXFila[i];
-        }*/
+        if(maxValue < maximosXFila[i]->second) {
+            maxKey = maximosXFila[i]->first;
+            maxValue = maximosXFila[i]->second;
+        }
 
-        cout << maximosXFila[i] << endl;
+        delete maximosXFila[i];
     }
 
     for (int i = 0; i < maxLength; i++) {
         pthread_mutex_unlock(&(aai[i])); // Desbloqueo todo el  array
     }
 
-    return *maximo;
+    return make_pair(maxKey, maxValue);
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(string arch) {
