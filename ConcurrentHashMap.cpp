@@ -8,9 +8,9 @@ using namespace std;
 #include <algorithm>
 #include <semaphore.h>
 
-sem_t sem_c;
-pthread_mutex_t libre_mutex;
-bool *libre;
+//sem_t sem_c;
+//pthread_mutex_t libre_mutex;
+//bool *libre;
 
 unsigned int ConcurrentHashMap::hash(string s) {
     return (int) (s.at(0)) - 97;
@@ -34,7 +34,7 @@ void* ConcurrentHashMap::f(void* cosa) {
     return NULL;
 }
 
-void* ConcurrentHashMap::g(void* cosa) {
+/*void* ConcurrentHashMap::g(void* cosa) {
     Cosa* c = (Cosa*) cosa;
     c->_hashMap->processFile(c->_arch);
     //    cerr << "soy hilo " << c->_h_id << " y pido el mutex " << endl;
@@ -46,7 +46,7 @@ void* ConcurrentHashMap::g(void* cosa) {
     sem_post(&sem_c); //sumo un hilo terminado en el contador de terminados
     //    cerr << "soy hilo " << c->_h_id << " y te mande un signal " << endl;
     return NULL;
-}
+}*/
 
 ConcurrentHashMap::ConcurrentHashMap() {
     for (int i = 0; i < maxLength; i++) {
@@ -195,7 +195,33 @@ ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
     return *hashMap;
 }
 
+void* ConcurrentHashMap::g(void* c){
+	Cosa* c = (Cosa*) cosa;
+	ConcurrentHashMap* = cosa->_hashMap;
+	
+	c->_hashMap->processFile(c->_arch);
+    return NULL;
+}
+
 ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {
+	ConcurrentHashMap* hashMap = new ConcurrentHashMap();
+	unsigned int cant_archivos = archs.size();
+    unsigned int cant_hilos = min(n, cant_archivos);
+	list<string>::iterator it = archs.begin();
+	//ConcurrentHashMap*
+	//list<string>::iterator
+	unsigned int h_id = 0;
+	for (h_id = 0; h_id < cant_hilos; h_id++) {//pongo a correr en todos los hilos un archivo
+		cosa[h_id] = new Cosa(hashMap, &it);
+        pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
+    }
+	for (h_id = 0; h_id < cant_hilos; h_id++) {
+        pthread_join(hilo[h_id], NULL);
+    }	
+	return *hashMap;
+}
+
+/*ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {
     ConcurrentHashMap* hashMap = new ConcurrentHashMap();
     unsigned int cant_archivos = archs.size();
     unsigned int cant_hilos = min(n, cant_archivos); //voy a crear a lo sumo cant achivos hilos por mas que n sea mayor
@@ -261,7 +287,7 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
     }
     sem_destroy(&sem_c);
     return *hashMap;
-}
+}*/
 
 item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap;

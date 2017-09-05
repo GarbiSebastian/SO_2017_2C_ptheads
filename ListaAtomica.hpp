@@ -17,13 +17,10 @@ private:
     };
 
     std::atomic<Nodo *> _head;
-    pthread_mutex_t insert_lock;
 
 public:
 
-    Lista() : _head(nullptr) {
-        pthread_mutex_init(&insert_lock, NULL);
-    }
+    Lista() : _head(nullptr) {}
 
     ~Lista() {
         Nodo *n, *t;
@@ -33,18 +30,18 @@ public:
             n = n->_next;
             delete t;
         }
-        pthread_mutex_destroy(&insert_lock);
     }
 
     void push_front(const T& val) {
         /* Completar. Debe ser atómico. */
         Nodo* nuevo = new Nodo(val);
-        //inicio atómico
-        pthread_mutex_lock(&insert_lock);
-        nuevo->_next = this->_head.load();
-        this->_head.store(nuevo);
-        pthread_mutex_unlock(&insert_lock);
-        //fin atómico
+        nuevo->_next = this->_head.load(std::memory_order_relaxed);
+        while(!this->_head.compare_exchange_weak(
+										nuevo->_next,
+										nuevo,
+                                        std::memory_order_release,
+                                        std::memory_order_relaxed)
+		);
     }
 
     T& front() const {
