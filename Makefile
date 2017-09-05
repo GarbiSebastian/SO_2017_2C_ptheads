@@ -11,7 +11,7 @@ DEBUG = -g
 	$(CXX) $(CXXFLAGS) -c $<
 	$(CXX) $(CXXFLAGS) -c $(DEBUG) $<
 
-BIN = test-1 test-2 test-3 test-4 test-5
+BIN = test-1 test-2 test-3 test-4 test-5 test-6
 OBJ = ConcurrentHashMap.o
 
 all: $(BIN)
