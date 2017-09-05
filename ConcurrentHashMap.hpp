@@ -38,17 +38,19 @@ private:
             _conMutex = true;
         }*/
         
-        Cosa(ConcurrentHashMap* hashMap, list<string>::iterator& it) :
+        Cosa(ConcurrentHashMap* hashMap, list<string>::iterator* it,list<string>::iterator* end ) :
         _hashMap(hashMap),
-        _it(it)
+        _it(it),
+        _end(end)
         {
             _conMutex = false;
         }
        
         ConcurrentHashMap* _hashMap;
-        list<string>::iterator it;
+        list<string>::iterator* _it;
+        list<string>::iterator* _end;
         
-        //string _arch;
+        string _arch;
         //unsigned int _h_id;
         bool _conMutex;
     };

@@ -8,9 +8,7 @@ using namespace std;
 #include <algorithm>
 #include <semaphore.h>
 
-//sem_t sem_c;
-//pthread_mutex_t libre_mutex;
-//bool *libre;
+pthread_mutex_t tomoArchivo;
 
 unsigned int ConcurrentHashMap::hash(string s) {
     return (int) (s.at(0)) - 97;
@@ -33,20 +31,6 @@ void* ConcurrentHashMap::f(void* cosa) {
     c->_hashMap->processFile(c->_arch);
     return NULL;
 }
-
-/*void* ConcurrentHashMap::g(void* cosa) {
-    Cosa* c = (Cosa*) cosa;
-    c->_hashMap->processFile(c->_arch);
-    //    cerr << "soy hilo " << c->_h_id << " y pido el mutex " << endl;
-    pthread_mutex_lock(&libre_mutex);
-    //    cerr << "soy hilo " << c->_h_id << " y tengo el mutex " << endl;
-    libre[c->_h_id] = true;
-    pthread_mutex_unlock(&libre_mutex);
-    //    cerr << "soy hilo " << c->_h_id << " y libere el  mutex " << endl;
-    sem_post(&sem_c); //sumo un hilo terminado en el contador de terminados
-    //    cerr << "soy hilo " << c->_h_id << " y te mande un signal " << endl;
-    return NULL;
-}*/
 
 ConcurrentHashMap::ConcurrentHashMap() {
     for (int i = 0; i < maxLength; i++) {
@@ -196,10 +180,18 @@ ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
 }
 
 void* ConcurrentHashMap::g(void* c){
-	Cosa* c = (Cosa*) cosa;
-	ConcurrentHashMap* = cosa->_hashMap;
-	
-	c->_hashMap->processFile(c->_arch);
+	Cosa* cosa = (Cosa*) c;
+	ConcurrentHashMap* hashMap= cosa->_hashMap;
+	string arch;
+	pthread_mutex_lock(&tomoArchivo);
+	while(*(cosa->_it) != *(cosa->_end)){
+		arch = *(*(cosa->_it));
+		++(*(cosa->_it));
+		pthread_mutex_unlock(&tomoArchivo);
+		hashMap->processFile(arch);
+		pthread_mutex_lock(&tomoArchivo);
+	}
+	pthread_mutex_unlock(&tomoArchivo);
     return NULL;
 }
 
@@ -207,12 +199,14 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
 	ConcurrentHashMap* hashMap = new ConcurrentHashMap();
 	unsigned int cant_archivos = archs.size();
     unsigned int cant_hilos = min(n, cant_archivos);
+    Cosa* cosa[cant_hilos];
+    pthread_t hilo[cant_hilos];
 	list<string>::iterator it = archs.begin();
-	//ConcurrentHashMap*
-	//list<string>::iterator
+	list<string>::iterator end = archs.end();
+	pthread_mutex_init(&tomoArchivo,NULL);
 	unsigned int h_id = 0;
 	for (h_id = 0; h_id < cant_hilos; h_id++) {//pongo a correr en todos los hilos un archivo
-		cosa[h_id] = new Cosa(hashMap, &it);
+		cosa[h_id] = new Cosa(hashMap, &it, &end);
         pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
     }
 	for (h_id = 0; h_id < cant_hilos; h_id++) {
@@ -221,77 +215,8 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
 	return *hashMap;
 }
 
-/*ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {
-    ConcurrentHashMap* hashMap = new ConcurrentHashMap();
-    unsigned int cant_archivos = archs.size();
-    unsigned int cant_hilos = min(n, cant_archivos); //voy a crear a lo sumo cant achivos hilos por mas que n sea mayor
-    //    cerr << "Hola Soy main, quizas me recuerden de otros TPs como OrgaII y AlgoIII" << endl;
-    //    cerr << "soy main y voy a trabajar con " << cant_hilos << " hilos " << " y " << cant_archivos << " archivos" << endl;
-
-    pthread_t hilo[cant_hilos];
-    int h_id = 0;
-    Cosa * cosa[cant_hilos];
-    list<string>::iterator it = archs.begin();
-    bool l[cant_hilos];
-    libre = l;
-    for (h_id = 0; h_id < cant_hilos; h_id++) {
-        libre[h_id] = false;
-    }
-
-    sem_init(&sem_c, 0, -1);
-    pthread_mutex_init(&libre_mutex, NULL);
-
-    //PRIMERA ASIGNACION DE ARCHIVOS
-    for (h_id = 0; h_id < cant_hilos; h_id++) {//pongo a correr en todos los hilos un archivo
-        //        cerr << "soy main y voy a crear cosa para el archivo " << *it << " en hilo " << h_id << endl;
-        cosa[h_id] = new Cosa(hashMap, *it, h_id);
-        //        cerr << "soy main y voy a crear el hilo " << h_id << endl;
-        pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
-        ++it;
-    }//fin primera asignacion
-
-    h_id = 0;
-
-    while (it != archs.end()) {//ciclo para el resto de archivos con todos los hilos llenos
-        //        cerr << "soy main y voy a trabajar con " << *it << endl;
-        //        cerr << "soy main y me quedo esperando un signal" << endl;
-        sem_wait(&sem_c);
-        //        cerr << "soy main y alguien mando un signal" << endl;
-        //        cerr << "soy main y pido el mutex" << endl;
-        pthread_mutex_lock(&libre_mutex);
-        //        cerr << "soy main y tengo el mutex" << endl;
-        int iteracion = 0;
-        while (!libre[h_id]) {//entre aca porque algun hilo avisó que estaba libre, busco alguno
-            assert(iteracion < cant_hilos);
-            iteracion++;
-            h_id = (++h_id % cant_hilos);
-        }
-        //        cerr << "encontre libre a " << h_id << endl;
-        libre[h_id] = false; //actualizo libre para poder liberar su mutex
-        pthread_mutex_unlock(&libre_mutex); //libero el mutex de libre
-        //        cerr << "soy main y liberé el mutex" << endl;
-        //se que el hilo h_id terminó porque aparece en libre y liberó el mutex, y eso es lo ultimo que hace antes del return
-        pthread_join(hilo[h_id], NULL); //espero a que haga el return a lo sumo
-        //        cerr << "soy main y joinie el hilo " << h_id << endl;
-        free(cosa[h_id]);
-        //        cerr << "soy main y libere " << h_id << endl;
-        cosa[h_id] = new Cosa(hashMap, *it, h_id);
-        pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
-        ++it;
-        h_id = (++h_id % cant_hilos);
-    }
-
-    for (h_id = 0; h_id < cant_hilos; h_id++) {
-        pthread_join(hilo[h_id], NULL);
-        assert(libre[h_id]);
-    }
-    sem_destroy(&sem_c);
-    return *hashMap;
-}*/
-
 item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap;
-    //list<string>::iterator it = archs.begin();
     for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
         hashMap.processFile(*it);
     }
@@ -301,64 +226,4 @@ item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(p_archivos, archs);
     return hashMap.maximum(p_maximos);
-
-    /*ConcurrentHashMap hashMap;
-    int maximos_hilos = 0;
-    if (p_archivos > p_maximos) {
-        maximos_hilos = p_archivos;
-    } else {
-        maximos_hilos = p_maximos;
-    }
-    pthread_t hilo[p_maximos];
-    int j = 0;
-    Cosa * v[archs.size()];
-    int h_id = 0;
-    list<string>::iterator it = archs.begin();
-    while (j < archs.size()) {
-        // Se lanzan los p_archivos threads (o los que restan por lanzar)
-        for (int i = 0; i < min(p_archivos, archs.size() - j); i++) {
-            v[h_id] = new Cosa(hashMap, *it);
-            pthread_create(&(hilo[i]), NULL, f, (void*) (v[h_id]));
-            h_id++;
-            ++it;
-        }
-        for (int i = 0; i < min(p_archivos, archs.size() - j); i++) {
-            pthread_join(hilo[i], NULL);
-            //free(v[h_id]);
-        }
-        j += p_archivos;
-    }
-    j = 0;
-    while (j < archs.size()) {
-        free(v[j]);
-        j++;
-    }
-    //se calcula el maximo
-    for (int i = 0; i < maxLength; i++) {
-        pthread_mutex_lock(&(aai[i]));
-    }
-    string maxKey = "";
-    int maxValue = 0;
-    item * maximosXFila[maxLength];
-    j = 0;
-    while (j < maxLength) {
-        for (int i = 0; i < min(p_maximos, maxLength - j); i++) {
-            pthread_create(&(hilo[i]), NULL, &procesarFila, hashMap->tabla[j + i]);
-        }
-        for (int i = 0; i < min(p_maximos, maxLength - j); i++) {
-            pthread_join(hilo[i], (void**) (&maximosXFila[j + i]));
-        }
-        j += p_maximos;
-    }
-    for (int i = 0; i < maxLength; i++) {
-        if(maxValue < maximosXFila[i]->second) {
-            maxKey = maximosXFila[i]->first;
-            maxValue = maximosXFila[i]->second;
-        }
-        delete maximosXFila[i];
-    }
-    for (int i = 0; i < maxLength; i++) {
-        pthread_mutex_unlock(&(aai[i]));
-    }
-    return make_pair(maxKey, maxValue);*/
 }
