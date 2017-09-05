@@ -3,20 +3,16 @@
 
 using namespace std;
 
-int main(void) {
-    ConcurrentHashMap h;
-    int i;
-
-    h = ConcurrentHashMap::count_words("corpus");
-    for (i = 0; i < 26; i++) {
-        for (auto it = h.tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
-            auto t = it.Siguiente();
-            //cout << t.first << " " << t.second << endl;
-        }
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        cerr << "uso: " << argv[0] << " #threads" << endl;
+        return 1;
     }
+    ConcurrentHashMap h = ConcurrentHashMap::count_words("corpus");
 
-    item dato = h.maximum(1);
-    cout << "<" << dato.first << ", " << dato.second << ">" << endl;
+    item dato = h.maximum(atoi(argv[1]));
+    //    cout << "<" << dato.first << ", " << dato.second << ">" << endl;
+    cout << dato.first << " " << dato.second << endl;
 
     return 0;
 }
