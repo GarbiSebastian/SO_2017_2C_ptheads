@@ -22,6 +22,8 @@ private:
     void processFile(string arch);
     static void* f(void * cosa);
     static void* g(void * cosa);
+    static void* crear_hashMaps(void* c);
+    void add_hashMaps(item* p);
 
     struct Cosa {
 
