@@ -215,6 +215,84 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
 	return *hashMap;
 }
 
+void* ConcurrentHashMap::crear_hashMaps(void* c){
+	Cosa2* cosa2 = (Cosa2*) c;
+	string arch;
+	pthread_mutex_lock(&tomoArchivo);
+	while(*(cosa2->_it) != *(cosa2->_end)){
+		arch = *(*(cosa2->_it));
+		++(*(cosa2->_it));
+		pthread_mutex_unlock(&tomoArchivo);
+		ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(arch);
+        	cosa2->_hashMaps->push_front(hashMap);
+		pthread_mutex_lock(&tomoArchivo);
+	}
+	pthread_mutex_unlock(&tomoArchivo);
+    	return NULL;
+}
+
+void ConcurrentHashMap::add_hashMaps(item* p) {
+    item* t;
+    bool encontre = false;
+    int hashKey = this->hash(p->first);
+    //assert(hashKey < maxLength);
+    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
+    auto it = this->tabla[hashKey]->CrearIt();
+    while (it.HaySiguiente() && !encontre) {
+        t = &(it.Siguiente());
+        encontre = t->first == p->first;
+        it.Avanzar();
+    }
+    if (encontre) {
+        t->second = t->second + p->first;
+    } else {
+        this->tabla[hashKey]->push_front(p);
+    }
+    pthread_mutex_unlock(&(aai[hashKey]));
+}
+
+item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
+    Lista<ConcurrentHashMap>* hashMaps;
+    ConcurrentHashMap* hashMap_principal = new ConcurrentHashMap();
+    unsigned int cant_hilos = min(p_archivos, archs.size());
+    Cosa2* cosa2[cant_hilos];
+    pthread_t hilo[cant_hilos];
+	list<string>::iterator it = archs.begin();
+	list<string>::iterator end = archs.end();
+	pthread_mutex_init(&tomoArchivo,NULL);
+    unsigned int h_id = 0;
+	for (h_id = 0; h_id < cant_hilos; h_id++) {//armo la lista de hashMaps
+		cosa2[h_id] = new Cosa2(hashMaps, &it, &end);
+        pthread_create(&(hilo[h_id]), NULL, crear_hashMaps, (void*) (cosa2[h_id]));
+    }
+	for (h_id = 0; h_id < cant_hilos; h_id++) {
+        pthread_join(hilo[h_id], NULL);
+    }
+    //merge (poner todos los "hashMaps" en hashMap_principal)
+    ConcurrentHashMap t;
+    item* t2;
+    it = archs.begin();
+    end = archs.end();
+    h_id = 0;
+    unsigned int i = 0;
+    auto it = hashMaps->CrearIt();
+    while (it.HaySiguiente()) {
+        t = &(it.Siguiente());
+        for (i = 0; i < maxLength; i++) {
+            auto it2 = t->tabla[i]->CrearIt();
+            while (it2.HaySiguiente()) {
+                t2 = &(it2.Siguiente());
+                hashMap_principal->add_hashMaps(t2);
+                it2.Avanzar();
+            }
+        }
+        it.Avanzar();
+    }
+    return hashMap_principal.maximum(p_maximos);
+}
+
+
+/*
 item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap;
     for (list<string>::iterator it = archs.begin(); it != archs.end(); ++it) {
@@ -222,6 +300,7 @@ item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     }
     return hashMap.maximum(p_maximos);
 }
+*/
 
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(p_archivos, archs);
