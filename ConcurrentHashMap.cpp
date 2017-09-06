@@ -179,56 +179,56 @@ ConcurrentHashMap ConcurrentHashMap::count_words(list<string> archs) {
     return *hashMap;
 }
 
-void* ConcurrentHashMap::g(void* c){
-	Cosa* cosa = (Cosa*) c;
-	ConcurrentHashMap* hashMap= cosa->_hashMap;
-	string arch;
-	pthread_mutex_lock(&tomoArchivo);
-	while(*(cosa->_it) != *(cosa->_end)){
-		arch = *(*(cosa->_it));
-		++(*(cosa->_it));
-		pthread_mutex_unlock(&tomoArchivo);
-		hashMap->processFile(arch);
-		pthread_mutex_lock(&tomoArchivo);
-	}
-	pthread_mutex_unlock(&tomoArchivo);
+void* ConcurrentHashMap::g(void* c) {
+    Cosa* cosa = (Cosa*) c;
+    ConcurrentHashMap* hashMap = cosa->_hashMap;
+    string arch;
+    pthread_mutex_lock(&tomoArchivo);
+    while (*(cosa->_it) != *(cosa->_end)) {
+        arch = *(*(cosa->_it));
+        ++(*(cosa->_it));
+        pthread_mutex_unlock(&tomoArchivo);
+        hashMap->processFile(arch);
+        pthread_mutex_lock(&tomoArchivo);
+    }
+    pthread_mutex_unlock(&tomoArchivo);
     return NULL;
 }
 
 ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> archs) {
-	ConcurrentHashMap* hashMap = new ConcurrentHashMap();
-	unsigned int cant_archivos = archs.size();
+    ConcurrentHashMap* hashMap = new ConcurrentHashMap();
+    unsigned int cant_archivos = archs.size();
     unsigned int cant_hilos = min(n, cant_archivos);
-    Cosa* cosa[cant_hilos];
+    Cosa * cosa[cant_hilos];
     pthread_t hilo[cant_hilos];
-	list<string>::iterator it = archs.begin();
-	list<string>::iterator end = archs.end();
-	pthread_mutex_init(&tomoArchivo,NULL);
-	unsigned int h_id = 0;
-	for (h_id = 0; h_id < cant_hilos; h_id++) {//pongo a correr en todos los hilos un archivo
-		cosa[h_id] = new Cosa(hashMap, &it, &end);
+    list<string>::iterator it = archs.begin();
+    list<string>::iterator end = archs.end();
+    pthread_mutex_init(&tomoArchivo, NULL);
+    unsigned int h_id = 0;
+    for (h_id = 0; h_id < cant_hilos; h_id++) {
+        cosa[h_id] = new Cosa(hashMap, &it, &end);
         pthread_create(&(hilo[h_id]), NULL, g, (void*) (cosa[h_id]));
     }
-	for (h_id = 0; h_id < cant_hilos; h_id++) {
+    for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
-    }	
-	return *hashMap;
+    }
+    return *hashMap;
 }
 
-void* ConcurrentHashMap::crear_hashMaps(void* c){
-	Cosa2* cosa2 = (Cosa2*) c;
-	string arch;
-	pthread_mutex_lock(&tomoArchivo);
-	while(*(cosa2->_it) != *(cosa2->_end)){
-		arch = *(*(cosa2->_it));
-		++(*(cosa2->_it));
-		pthread_mutex_unlock(&tomoArchivo);
-		ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(arch);
-        	cosa2->_hashMaps->push_front(hashMap);
-		pthread_mutex_lock(&tomoArchivo);
-	}
-	pthread_mutex_unlock(&tomoArchivo);
-    	return NULL;
+void* ConcurrentHashMap::crear_hashMaps(void* c) {
+    Cosa2* cosa2 = (Cosa2*) c;
+    string arch;
+    pthread_mutex_lock(&tomoArchivo);
+    while (*(cosa2->_it) != *(cosa2->_end)) {
+        arch = *(*(cosa2->_it));
+        ++(*(cosa2->_it));
+        pthread_mutex_unlock(&tomoArchivo);
+        ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(arch);
+        cosa2->_hashMaps->push_front(hashMap);
+        pthread_mutex_lock(&tomoArchivo);
+    }
+    pthread_mutex_unlock(&tomoArchivo);
+    return NULL;
 }
 
 void ConcurrentHashMap::add_hashMaps(item* p) {
@@ -252,26 +252,26 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
 }
 
 item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
-    Lista<ConcurrentHashMap>* hashMaps;
+    Lista<ConcurrentHashMap>* hashMaps = new Lista<ConcurrentHashMap>();
     ConcurrentHashMap* hashMap_principal = new ConcurrentHashMap();
     unsigned int cant_archivos = archs.size();
     unsigned int cant_hilos = min(p_archivos, cant_archivos);
-    Cosa2* cosa2[cant_hilos];
+    Cosa2 * cosa2[cant_hilos];
     pthread_t hilo[cant_hilos];
-	list<string>::iterator it = archs.begin();
-	list<string>::iterator end = archs.end();
-	pthread_mutex_init(&tomoArchivo,NULL);
+    list<string>::iterator it = archs.begin();
+    list<string>::iterator end = archs.end();
+    pthread_mutex_init(&tomoArchivo, NULL);
     unsigned int h_id = 0;
-    
+
     //armo la lista de hashMaps
-	for (h_id = 0; h_id < cant_hilos; h_id++) {
-		cosa2[h_id] = new Cosa2(hashMaps, &it, &end);
+    for (h_id = 0; h_id < cant_hilos; h_id++) {
+        cosa2[h_id] = new Cosa2(hashMaps, &it, &end);
         pthread_create(&(hilo[h_id]), NULL, crear_hashMaps, (void*) (cosa2[h_id]));
     }
-	for (h_id = 0; h_id < cant_hilos; h_id++) {
+    for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
     }
-    
+
     //merge (poner todos los "hashMaps" en hashMap_principal)
     ConcurrentHashMap* t = new ConcurrentHashMap();
     item* t2;
@@ -292,7 +292,7 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
         }
         it1.Avanzar();
     }
-    
+
     return hashMap_principal->maximum(p_maximos);
 }
 
@@ -304,7 +304,7 @@ item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
     }
     return hashMap.maximum(p_maximos);
 }
-*/
+ */
 
 item ConcurrentHashMap::maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
     ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(p_archivos, archs);
