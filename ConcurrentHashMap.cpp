@@ -231,7 +231,7 @@ void* ConcurrentHashMap::crear_hashMaps(void* c){
     	return NULL;
 }
 
-void ConcurrentHashMap::add_hashMaps(item* p) {
+void* ConcurrentHashMap::add_hashMaps(item* p) {
     item* t;
     bool encontre = false;
     int hashKey = this->hash(p->first);
@@ -244,9 +244,9 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
         it.Avanzar();
     }
     if (encontre) {
-        t->second = t->second + p->first;
+        t->second = t->second + p->second;
     } else {
-        this->tabla[hashKey]->push_front(p);
+        this->tabla[hashKey]->push_front(*p);
     }
     pthread_mutex_unlock(&(aai[hashKey]));
 }
@@ -254,30 +254,34 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
 item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
     Lista<ConcurrentHashMap>* hashMaps;
     ConcurrentHashMap* hashMap_principal = new ConcurrentHashMap();
-    unsigned int cant_hilos = min(p_archivos, archs.size());
+    unsigned int cant_archivos = archs.size();
+    unsigned int cant_hilos = min(p_archivos, cant_archivos);
     Cosa2* cosa2[cant_hilos];
     pthread_t hilo[cant_hilos];
 	list<string>::iterator it = archs.begin();
 	list<string>::iterator end = archs.end();
 	pthread_mutex_init(&tomoArchivo,NULL);
     unsigned int h_id = 0;
-	for (h_id = 0; h_id < cant_hilos; h_id++) {//armo la lista de hashMaps
+    
+    //armo la lista de hashMaps
+	for (h_id = 0; h_id < cant_hilos; h_id++) {
 		cosa2[h_id] = new Cosa2(hashMaps, &it, &end);
         pthread_create(&(hilo[h_id]), NULL, crear_hashMaps, (void*) (cosa2[h_id]));
     }
 	for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
     }
+    
     //merge (poner todos los "hashMaps" en hashMap_principal)
-    ConcurrentHashMap t;
+    ConcurrentHashMap* t = new ConcurrentHashMap();
     item* t2;
     it = archs.begin();
     end = archs.end();
     h_id = 0;
     unsigned int i = 0;
-    auto it = hashMaps->CrearIt();
-    while (it.HaySiguiente()) {
-        t = &(it.Siguiente());
+    auto it1 = hashMaps->CrearIt();
+    while (it1.HaySiguiente()) {
+        t = &(it1.Siguiente());
         for (i = 0; i < maxLength; i++) {
             auto it2 = t->tabla[i]->CrearIt();
             while (it2.HaySiguiente()) {
@@ -286,11 +290,11 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
                 it2.Avanzar();
             }
         }
-        it.Avanzar();
+        it1.Avanzar();
     }
-    return hashMap_principal.maximum(p_maximos);
+    
+    return hashMap_principal->maximum(p_maximos);
 }
-
 
 /*
 item ConcurrentHashMap::maximum(unsigned int p_maximos, list<string> archs) {
