@@ -231,7 +231,7 @@ void* ConcurrentHashMap::crear_hashMaps(void* c){
     	return NULL;
 }
 
-void* ConcurrentHashMap::add_hashMaps(item* p) {
+void ConcurrentHashMap::add_hashMaps(item* p) {
     item* t;
     bool encontre = false;
     int hashKey = this->hash(p->first);
