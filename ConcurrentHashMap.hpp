@@ -54,6 +54,24 @@ private:
         //unsigned int _h_id;
         bool _conMutex;
     };
+	
+    struct Cosa2 {
+
+        Cosa2(Lista<ConcurrentHashMap>* hashMaps, list<string>::iterator* it,list<string>::iterator* end ) :
+        _hashMaps(hashMaps),
+        _it(it),
+        _end(end)
+        {
+            _conMutex = false;
+        }
+
+        Lista<ConcurrentHashMap>* _hashMaps;
+        list<string>::iterator* _it;
+        list<string>::iterator* _end;
+
+        bool _conMutex;
+    };
+	
 public:
     Lista<item>* tabla[26];
     ConcurrentHashMap();
@@ -64,8 +82,9 @@ public:
     static ConcurrentHashMap count_words(string arch);
     static ConcurrentHashMap count_words(list<string> archs);
     static ConcurrentHashMap count_words(unsigned int n, list<string> archs);
-    static item maximum(unsigned int p_maximos, list<string> archs);
-	static item maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
+    //static item maximum(unsigned int p_maximos, list<string> archs);
+    static item maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
+    static item maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
 
 };
 
