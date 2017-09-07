@@ -89,6 +89,7 @@ clean:
 	rm -f $(BIN) $(OBJ)
 	rm -f corpus-*
 	rm -f tiempos-*
+	rm -f salida-*
 
 ConcurrentHashMap.o: ConcurrentHashMap.cpp
 
