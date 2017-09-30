@@ -13,7 +13,7 @@ pthread_mutex_t tomoArchivo;
 ConcurrentHashMap::ConcurrentHashMap() {
     for (int i = 0; i < maxLength; i++) {
         this->tabla[i] = new Lista<item>();
-//        pthread_mutex_init(&aai[i], NULL);
+        //        pthread_mutex_init(&aai[i], NULL);
         pthread_rwlock_init(&aai[i], NULL);
     }
 }
@@ -21,7 +21,7 @@ ConcurrentHashMap::ConcurrentHashMap() {
 ConcurrentHashMap::~ConcurrentHashMap() {
     for (int i = 0; i < maxLength; i++) {
         //free(this->tabla[i]);
-//        pthread_mutex_destroy(&aai[i]);
+        //        pthread_mutex_destroy(&aai[i]);
         pthread_rwlock_destroy(&aai[i]);
     }
 }
@@ -35,76 +35,105 @@ void ConcurrentHashMap::addAndInc(string key) {
     bool encontre = false;
     int hashKey = this->hash(key);
     assert(hashKey < maxLength);
-//    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
-    
     auto it = this->tabla[hashKey]->CrearIt();
-    t = &(it.Siguiente());
-    string primeraKey = t->first;
+
+    //CASO LISTA VACÍA (PARA QUE TERMINE RÁPIDO EN CASO DE TENER LA LISTA VACÍA)
+    if (!it.HaySiguiente()) {
+        //CASO LISTA VACÍA
+        pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
+        it = this->tabla[hashKey]->CrearIt();    
+        if (!it.HaySiguiente()) {// La lista sigue vacía (Nadie más insertó desde que pregunté) pero esta vez solo yo puedo escribir
+            this->tabla[hashKey]->push_front(make_pair(key, 1));
+            pthread_rwlock_unlock(&(aai[hashKey]));
+            return;
+        }else{
+            //SI ALGUIEN AGREGÓ ALGO DESPUES DEL PRIMER IF, LA LISTA YA NO ESTÁ VACÍA, DEVUELVO EL LOCK Y ENTRA POR EL CASO LISTA CON ELEMENTOS
+            pthread_rwlock_unlock(&(aai[hashKey]));
+        }
+    }
     
-    while (it.HaySiguiente() && !encontre) {
+    //CASO LISTA CON ELEMENTOS
+    t = &(it.Siguiente());
+    string primeraKey = t->first;//guardo el primer elemento para después
+    encontre = t->first == key;
+    it.Avanzar();
+    
+    while (it.HaySiguiente() && !encontre) {//HAGO UNA PRIMERA BÚSQUEDA SIN BLOQUEAR
         t = &(it.Siguiente());
         encontre = t->first == key;
         it.Avanzar();
     }
 
+    pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
     if (encontre) {
+        //CASO EXISTÍA LA CLAVE
         t->second++;
     } else {
-        pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
-        this->tabla[hashKey]->push_front(make_pair(key, atomic(1)));
-        pthread_rwlock_unlock(&(aai[hashKey]));
+        //REVISÉ TODA LA LISTA Y NO APARECIÓ. TENGO QUE VER SI NADIE LA AGREGÓ DESDE QUE EMPECÉ A CHEQUEAR
+        it = this->tabla[hashKey]->CrearIt();
+        t = &(it.Siguiente());
+        encontre = t->first == key;
+        it.Avanzar();
+        while (it.HaySiguiente() && !encontre && primeraKey != t->first) {//REVISO DE NUEVO LA PRIMERA PARTE DE LA LISTA, ESTA VEZ CON LOCK DE ESCRITURA TOMADO
+            t = &(it.Siguiente());
+            encontre = t->first == key;    
+            it.Avanzar();
+        }
+        if (encontre) {
+            //CASO EN QUE OTRO PROCESO LA INSERTÓ ANTES QUE YO EN LA PRIMERA BÚSQUEDA
+            t->second++;
+        } else {
+            this->tabla[hashKey]->push_front(make_pair(key, 1));
+        }
     }
-//    pthread_mutex_unlock(&(aai[hashKey]));
-    
+    pthread_rwlock_unlock(&(aai[hashKey]));
+    return;
 }
 
-
-void ConcurrentHashMap::processFile(string arch) {
+void ConcurrentHashMap::procesarArchivo(string arch) {
     ifstream archivo;
-    string linea;
+    string palabra;
     archivo.open(arch.c_str());
-    while (archivo >> linea) {
+    while (archivo >> palabra) {
         //cerr << linea << endl;
-        this->addAndInc(linea);
+        this->addAndInc(palabra);
     }
     archivo.close();
 }
 
-void* ConcurrentHashMap::f(void* cosa) {
-    Cosa* c = (Cosa*) cosa;
-    //    cerr << "llame a cosa con " << c->_arch << " <-" << endl;
-    c->_hashMap->processFile(c->_arch);
-    return NULL;
-}
-
 bool ConcurrentHashMap::member(string key) {
-
     int hashKey = this->hash(key);
     auto it = this->tabla[hashKey]->CrearIt();
     while (it.HaySiguiente()) {
-
         if (it.Siguiente().first == key) {
             return true;
         } else {
             it.Avanzar();
         }
-
     }
     return false;
 }
 
-void* procesarFila(void* lista) {
 
+
+void* ConcurrentHashMap::f(void* cosa) {
+    Cosa* c = (Cosa*) cosa;
+    //    cerr << "llame a cosa con " << c->_arch << " <-" << endl;
+    c->_hashMap->procesarArchivo(c->_arch);
+    return NULL;
+}
+
+
+
+void* procesarFila(void* lista) {
     string maxKey = "";
     int maxValue = 0;
     auto it = ((Lista<item>*) lista)->CrearIt();
-
     while (it.HaySiguiente()) {
-        item itemActual = it.Siguiente();
-
-        if (maxValue < itemActual.second) {
-            maxKey = itemActual.first;
-            maxValue = itemActual.second;
+        item* itemActual = &(it.Siguiente());
+        if (maxValue < itemActual->second) {
+            maxKey = itemActual->first;
+            maxValue = itemActual->second;
         }
 
         it.Avanzar();
@@ -117,7 +146,7 @@ void* procesarFila(void* lista) {
 item ConcurrentHashMap::maximum(unsigned int nt) {
 
     for (int i = 0; i < maxLength; i++) {
-//        pthread_mutex_lock(&(aai[i])); // Bloqueo todo el  array
+        //        pthread_mutex_lock(&(aai[i])); // Bloqueo todo el  array
         pthread_rwlock_rdlock(&(aai[i])); // Bloqueo todo el  array
     }
 
@@ -157,7 +186,7 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
     }
 
     for (int i = 0; i < maxLength; i++) {
-//        pthread_mutex_unlock(&(aai[i])); // Desbloqueo todo el  array
+        //        pthread_mutex_unlock(&(aai[i])); // Desbloqueo todo el  array
         pthread_rwlock_unlock(&(aai[i])); // Desbloqueo todo el  array
     }
 
@@ -166,7 +195,7 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
 
 ConcurrentHashMap ConcurrentHashMap::count_words(string arch) {
     ConcurrentHashMap hashMap;
-    hashMap.processFile(arch);
+    hashMap.procesarArchivo(arch);
     return hashMap;
 }
 
@@ -200,7 +229,7 @@ void* ConcurrentHashMap::g(void* c) {
         arch = *(*(cosa->_it));
         ++(*(cosa->_it));
         pthread_mutex_unlock(&tomoArchivo);
-        hashMap->processFile(arch);
+        hashMap->procesarArchivo(arch);
         pthread_mutex_lock(&tomoArchivo);
     }
     pthread_mutex_unlock(&tomoArchivo);
@@ -248,7 +277,7 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
     bool encontre = false;
     int hashKey = this->hash(p->first);
     //assert(hashKey < maxLength);
-//    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
+    //    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
     pthread_rwlock_wrlock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
     auto it = this->tabla[hashKey]->CrearIt();
     while (it.HaySiguiente() && !encontre) {
@@ -261,7 +290,7 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
     } else {
         this->tabla[hashKey]->push_front(*p);
     }
-//    pthread_mutex_unlock(&(aai[hashKey]));
+    //    pthread_mutex_unlock(&(aai[hashKey]));
     pthread_rwlock_unlock(&(aai[hashKey]));
 }
 
