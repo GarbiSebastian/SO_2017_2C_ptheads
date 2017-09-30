@@ -10,9 +10,54 @@ using namespace std;
 
 pthread_mutex_t tomoArchivo;
 
+ConcurrentHashMap::ConcurrentHashMap() {
+    for (int i = 0; i < maxLength; i++) {
+        this->tabla[i] = new Lista<item>();
+//        pthread_mutex_init(&aai[i], NULL);
+        pthread_rwlock_init(&aai[i], NULL);
+    }
+}
+
+ConcurrentHashMap::~ConcurrentHashMap() {
+    for (int i = 0; i < maxLength; i++) {
+        //free(this->tabla[i]);
+//        pthread_mutex_destroy(&aai[i]);
+        pthread_rwlock_destroy(&aai[i]);
+    }
+}
+
 unsigned int ConcurrentHashMap::hash(string s) {
     return (int) (s.at(0)) - 97;
 }
+
+void ConcurrentHashMap::addAndInc(string key) {
+    item* t;
+    bool encontre = false;
+    int hashKey = this->hash(key);
+    assert(hashKey < maxLength);
+//    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
+    
+    auto it = this->tabla[hashKey]->CrearIt();
+    t = &(it.Siguiente());
+    string primeraKey = t->first;
+    
+    while (it.HaySiguiente() && !encontre) {
+        t = &(it.Siguiente());
+        encontre = t->first == key;
+        it.Avanzar();
+    }
+
+    if (encontre) {
+        t->second++;
+    } else {
+        pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
+        this->tabla[hashKey]->push_front(make_pair(key, atomic(1)));
+        pthread_rwlock_unlock(&(aai[hashKey]));
+    }
+//    pthread_mutex_unlock(&(aai[hashKey]));
+    
+}
+
 
 void ConcurrentHashMap::processFile(string arch) {
     ifstream archivo;
@@ -30,41 +75,6 @@ void* ConcurrentHashMap::f(void* cosa) {
     //    cerr << "llame a cosa con " << c->_arch << " <-" << endl;
     c->_hashMap->processFile(c->_arch);
     return NULL;
-}
-
-ConcurrentHashMap::ConcurrentHashMap() {
-    for (int i = 0; i < maxLength; i++) {
-        this->tabla[i] = new Lista<item>();
-        pthread_mutex_init(&aai[i], NULL);
-    }
-}
-
-ConcurrentHashMap::~ConcurrentHashMap() {
-    for (int i = 0; i < maxLength; i++) {
-        //free(this->tabla[i]);
-        pthread_mutex_destroy(&aai[i]);
-    }
-}
-
-void ConcurrentHashMap::addAndInc(string key) {
-    item* t;
-    bool encontre = false;
-    int hashKey = this->hash(key);
-    assert(hashKey < maxLength);
-    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
-    auto it = this->tabla[hashKey]->CrearIt();
-    while (it.HaySiguiente() && !encontre) {
-        t = &(it.Siguiente());
-        encontre = t->first == key;
-        it.Avanzar();
-    }
-
-    if (encontre) {
-        t->second++;
-    } else {
-        this->tabla[hashKey]->push_front(make_pair(key, 1));
-    }
-    pthread_mutex_unlock(&(aai[hashKey]));
 }
 
 bool ConcurrentHashMap::member(string key) {
@@ -107,7 +117,8 @@ void* procesarFila(void* lista) {
 item ConcurrentHashMap::maximum(unsigned int nt) {
 
     for (int i = 0; i < maxLength; i++) {
-        pthread_mutex_lock(&(aai[i])); // Bloqueo todo el  array
+//        pthread_mutex_lock(&(aai[i])); // Bloqueo todo el  array
+        pthread_rwlock_rdlock(&(aai[i])); // Bloqueo todo el  array
     }
 
     string maxKey = "";
@@ -146,7 +157,8 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
     }
 
     for (int i = 0; i < maxLength; i++) {
-        pthread_mutex_unlock(&(aai[i])); // Desbloqueo todo el  array
+//        pthread_mutex_unlock(&(aai[i])); // Desbloqueo todo el  array
+        pthread_rwlock_unlock(&(aai[i])); // Desbloqueo todo el  array
     }
 
     return make_pair(maxKey, maxValue);
@@ -236,7 +248,8 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
     bool encontre = false;
     int hashKey = this->hash(p->first);
     //assert(hashKey < maxLength);
-    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
+//    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
+    pthread_rwlock_wrlock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
     auto it = this->tabla[hashKey]->CrearIt();
     while (it.HaySiguiente() && !encontre) {
         t = &(it.Siguiente());
@@ -248,7 +261,8 @@ void ConcurrentHashMap::add_hashMaps(item* p) {
     } else {
         this->tabla[hashKey]->push_front(*p);
     }
-    pthread_mutex_unlock(&(aai[hashKey]));
+//    pthread_mutex_unlock(&(aai[hashKey]));
+    pthread_rwlock_unlock(&(aai[hashKey]));
 }
 
 item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {

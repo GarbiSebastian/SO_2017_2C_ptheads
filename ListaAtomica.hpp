@@ -20,7 +20,8 @@ private:
 
 public:
 
-    Lista() : _head(nullptr) {}
+    Lista() : _head(nullptr) {
+    }
 
     ~Lista() {
         Nodo *n, *t;
@@ -36,12 +37,12 @@ public:
         /* Completar. Debe ser atómico. */
         Nodo* nuevo = new Nodo(val);
         nuevo->_next = this->_head.load(std::memory_order_relaxed);
-        while(!this->_head.compare_exchange_weak(
-										nuevo->_next,
-										nuevo,
-                                        std::memory_order_release,
-                                        std::memory_order_relaxed)
-		);
+        while (!this->_head.compare_exchange_weak(
+                nuevo->_next,
+                nuevo,
+                std::memory_order_release,
+                std::memory_order_relaxed)
+                );
     }
 
     T& front() const {

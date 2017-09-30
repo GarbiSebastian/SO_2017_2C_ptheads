@@ -1,0 +1,1 @@
+{ total += ; cant++ } END { print total;print cant; print total/cant }

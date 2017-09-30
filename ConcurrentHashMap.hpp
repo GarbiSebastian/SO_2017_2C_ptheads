@@ -10,7 +10,8 @@ using namespace std;
 #include <pthread.h>
 #include <semaphore.h>
 
-typedef pair<string, unsigned int> item;
+//typedef pair<string, unsigned int> item;
+typedef pair<string, std::atomic_uint > item;
 
 class ConcurrentHashMap {
 private:
@@ -18,7 +19,8 @@ private:
     static const unsigned int maxLength = 26;
 
     unsigned int hash(string s);
-    pthread_mutex_t aai[maxLength];
+//    pthread_mutex_t aai[maxLength];
+    pthread_rwlock_t aai[maxLength];
     void processFile(string arch);
     static void* f(void * cosa);
     static void* g(void * cosa);
