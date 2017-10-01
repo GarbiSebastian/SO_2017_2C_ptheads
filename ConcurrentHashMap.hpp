@@ -16,14 +16,14 @@ class ConcurrentHashMap {
 protected:
     static const unsigned int maxLength = 26;
     pthread_rwlock_t aai[maxLength];
+    
     unsigned int hash(string s);
-
     void procesarArchivo(string arch);
     static void* hiloProcesarArchivo(void * parametro);
     static void* calcularMaximos(void * parametro);
     static void* procesarListaDeArchivos(void * parametro);
     static void* crear_hashMaps(void* parametro);
-    void add_hashMaps(item* p);
+    void addAndInc(string key,unsigned int n);
 
     struct ParametroMaximum {
 
@@ -73,7 +73,6 @@ public:
     ConcurrentHashMap();
     ~ConcurrentHashMap();
     void addAndInc(string key);
-    void addAndInc(string key,unsigned int n);
     bool member(string key);
     item maximum(unsigned int nt);
     static ConcurrentHashMap count_words(string arch);

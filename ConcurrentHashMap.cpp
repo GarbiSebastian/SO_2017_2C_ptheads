@@ -129,7 +129,6 @@ void* ConcurrentHashMap::calcularMaximos(void* parametro){
     ParametroMaximum* p = (ParametroMaximum*) parametro;
     hashKey = p->_proximaLetra++;
     while(hashKey < maxLength){
-        pthread_rwlock_rdlock(&(p->_hashMap->aai[hashKey]));
         auto it = ((Lista<item>*) p->_hashMap->tabla[hashKey])->CrearIt();
         while (it.HaySiguiente()) {
             itemActual = &(it.Siguiente());
@@ -138,7 +137,6 @@ void* ConcurrentHashMap::calcularMaximos(void* parametro){
             }
             it.Avanzar();
         }
-        pthread_rwlock_unlock(&(p->_hashMap->aai[hashKey]));
         hashKey = p->_proximaLetra++;    
     }
     return (void*) itemMaximo;
@@ -150,6 +148,10 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
     
     pthread_t threads[cant_hilos];
     ParametroMaximum parametro(this);
+    //tomo todos los rw_locks para evitar la escritura en la tabla
+    for(int i = 0; i< maxLength; i++){
+        pthread_rwlock_rdlock(&(this->aai[i]));
+    }
     for (int i = 0; i < cant_hilos; i++){
         pthread_create(&(threads[i]), NULL, &calcularMaximos, &parametro);
     }
@@ -162,6 +164,10 @@ item ConcurrentHashMap::maximum(unsigned int nt) {
         if(maximo->second < siguiente->second){
             maximo = siguiente;
         }
+    }
+    //devuelvo todos los rw_locks
+    for(int i = 0; i< maxLength; i++){
+        pthread_rwlock_unlock(&(this->aai[i]));
     }
     return *maximo;
 }
@@ -248,28 +254,6 @@ void* ConcurrentHashMap::crear_hashMaps(void* parametro) {
     return NULL;
 }
 
-void ConcurrentHashMap::add_hashMaps(item* p) {
-    item* t;
-    bool encontre = false;
-    int hashKey = this->hash(p->first);
-    //assert(hashKey < maxLength);
-    //    pthread_mutex_lock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
-    pthread_rwlock_wrlock(&(aai[hashKey])); //pido mutex correspondiente a la letra para insertar
-    auto it = this->tabla[hashKey]->CrearIt();
-    while (it.HaySiguiente() && !encontre) {
-        t = &(it.Siguiente());
-        encontre = t->first == p->first;
-        it.Avanzar();
-    }
-    if (encontre) {
-        t->second = t->second + p->second;
-    } else {
-        this->tabla[hashKey]->push_front(*p);
-    }
-    //    pthread_mutex_unlock(&(aai[hashKey]));
-    pthread_rwlock_unlock(&(aai[hashKey]));
-}
-
 item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs) {
     Lista<ConcurrentHashMap>* hashMaps = new Lista<ConcurrentHashMap>();
     ConcurrentHashMap* hashMap_principal = new ConcurrentHashMap();
@@ -289,6 +273,7 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
     for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
     }
+    
     //merge (poner todos los "hashMaps" en hashMap_principal)
     ConcurrentHashMap* hashMap_p;
     item* item_p;
@@ -299,7 +284,6 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
             auto it_listaItem = hashMap_p->tabla[i]->CrearIt();
             while (it_listaItem.HaySiguiente()) {
                 item_p = &(it_listaItem.Siguiente());
-//                hashMap_principal->add_hashMaps(item_p);
                 hashMap_principal->addAndInc(item_p->first,item_p->second);
                 it_listaItem.Avanzar();
             }
