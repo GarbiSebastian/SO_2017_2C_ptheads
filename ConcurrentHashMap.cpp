@@ -31,6 +31,10 @@ unsigned int ConcurrentHashMap::hash(string s) {
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
+    return this->addAndInc(key,1);
+}
+
+void ConcurrentHashMap::addAndInc(string key, unsigned int n) {
     item* t;
     bool encontre = false;
     int hashKey = this->hash(key);
@@ -43,7 +47,7 @@ void ConcurrentHashMap::addAndInc(string key) {
         pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
         it = this->tabla[hashKey]->CrearIt();    
         if (!it.HaySiguiente()) {// La lista sigue vacía (Nadie más insertó desde que pregunté) pero esta vez solo yo puedo escribir
-            this->tabla[hashKey]->push_front(make_pair(key, 1));
+            this->tabla[hashKey]->push_front(make_pair(key, n));
             pthread_rwlock_unlock(&(aai[hashKey]));
             return;
         }else{
@@ -64,12 +68,15 @@ void ConcurrentHashMap::addAndInc(string key) {
         it.Avanzar();
     }
 
-    pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
+    
     if (encontre) {
         //CASO EXISTÍA LA CLAVE
-        t->second++;
+        pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
+        t->second+=n;
+        pthread_rwlock_unlock(&(aai[hashKey]));
     } else {
         //REVISÉ TODA LA LISTA Y NO APARECIÓ. TENGO QUE VER SI NADIE LA AGREGÓ DESDE QUE EMPECÉ A CHEQUEAR
+        pthread_rwlock_wrlock(&(aai[hashKey])); //pido rw_lock correspondiente a la letra para insertar
         it = this->tabla[hashKey]->CrearIt();
         t = &(it.Siguiente());
         encontre = t->first == key;
@@ -81,12 +88,13 @@ void ConcurrentHashMap::addAndInc(string key) {
         }
         if (encontre) {
             //CASO EN QUE OTRO PROCESO LA INSERTÓ ANTES QUE YO EN LA PRIMERA BÚSQUEDA
-            t->second++;
+            t->second+=n;
         } else {
-            this->tabla[hashKey]->push_front(make_pair(key, 1));
+            this->tabla[hashKey]->push_front(make_pair(key, n));
         }
+        pthread_rwlock_unlock(&(aai[hashKey]));
     }
-    pthread_rwlock_unlock(&(aai[hashKey]));
+    
     return;
 }
 
@@ -281,26 +289,22 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
     for (h_id = 0; h_id < cant_hilos; h_id++) {
         pthread_join(hilo[h_id], NULL);
     }
-
     //merge (poner todos los "hashMaps" en hashMap_principal)
-    ConcurrentHashMap* t;
-    item* t2;
-    it = archs.begin();
-    end = archs.end();
-    h_id = 0;
-    unsigned int i = 0;
-    auto it1 = hashMaps->CrearIt();
-    while (it1.HaySiguiente()) {
-        t = &(it1.Siguiente());
-        for (i = 0; i < maxLength; i++) {
-            auto it2 = t->tabla[i]->CrearIt();
-            while (it2.HaySiguiente()) {
-                t2 = &(it2.Siguiente());
-                hashMap_principal->add_hashMaps(t2);
-                it2.Avanzar();
+    ConcurrentHashMap* hashMap_p;
+    item* item_p;
+    auto it_hashMaps = hashMaps->CrearIt();
+    while (it_hashMaps.HaySiguiente()) {
+        hashMap_p = &(it_hashMaps.Siguiente());
+        for (unsigned int i = 0; i < maxLength; i++) {
+            auto it_listaItem = hashMap_p->tabla[i]->CrearIt();
+            while (it_listaItem.HaySiguiente()) {
+                item_p = &(it_listaItem.Siguiente());
+//                hashMap_principal->add_hashMaps(item_p);
+                hashMap_principal->addAndInc(item_p->first,item_p->second);
+                it_listaItem.Avanzar();
             }
         }
-        it1.Avanzar();
+        it_hashMaps.Avanzar();
     }
 
     return hashMap_principal->maximum(p_maximos);

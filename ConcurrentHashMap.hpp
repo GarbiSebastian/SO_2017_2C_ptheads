@@ -73,6 +73,7 @@ public:
     ConcurrentHashMap();
     ~ConcurrentHashMap();
     void addAndInc(string key);
+    void addAndInc(string key,unsigned int n);
     bool member(string key);
     item maximum(unsigned int nt);
     static ConcurrentHashMap count_words(string arch);
