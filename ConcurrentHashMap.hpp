@@ -13,68 +13,61 @@ using namespace std;
 typedef pair<string, unsigned int> item;
 
 class ConcurrentHashMap {
-private:
-
+protected:
     static const unsigned int maxLength = 26;
-
-    unsigned int hash(string s);
-//    pthread_mutex_t aai[maxLength];
     pthread_rwlock_t aai[maxLength];
+    unsigned int hash(string s);
+
     void procesarArchivo(string arch);
-    static void* f(void * cosa);
-    static void* g(void * cosa);
-    static void* crear_hashMaps(void* c);
+    static void* hiloProcesarArchivo(void * parametro);
+    static void* calcularMaximos(void * parametro);
+    static void* procesarListaDeArchivos(void * parametro);
+    static void* crear_hashMaps(void* parametro);
     void add_hashMaps(item* p);
 
-    struct Cosa {
+    struct ParametroMaximum {
 
-        Cosa(ConcurrentHashMap* hashMap, string arch) :
+        ParametroMaximum(ConcurrentHashMap* _hashMap) :
+        _hashMap(_hashMap) {
+            this->_proximaLetra = 0;
+        }
+        ConcurrentHashMap* _hashMap;
+        std::atomic_uint _proximaLetra;
+    };
+
+    struct ParametroProcesarArchivo {
+
+        ParametroProcesarArchivo(ConcurrentHashMap* hashMap, string arch) :
         _hashMap(hashMap),
         _arch(arch) {
-            _conMutex = false;
         }
+        ConcurrentHashMap* _hashMap;
+        string _arch;
+    };
 
-        /*Cosa(ConcurrentHashMap* hashMap, string arch, unsigned int h_id) :
-        _hashMap(hashMap),
-        _arch(arch),
-        _h_id(h_id) {
-            _conMutex = true;
-        }*/
-        
-        Cosa(ConcurrentHashMap* hashMap, list<string>::iterator* it,list<string>::iterator* end ) :
+    struct ParametroProcesarListaDeArchivos {
+
+        ParametroProcesarListaDeArchivos(ConcurrentHashMap* hashMap, list<string>::iterator* it, list<string>::iterator* end) :
         _hashMap(hashMap),
         _it(it),
-        _end(end)
-        {
-            _conMutex = false;
+        _end(end) {
         }
-       
         ConcurrentHashMap* _hashMap;
         list<string>::iterator* _it;
         list<string>::iterator* _end;
-        
-        string _arch;
-        //unsigned int _h_id;
-        bool _conMutex;
     };
-	
-    struct Cosa2 {
 
-        Cosa2(Lista<ConcurrentHashMap>* hashMaps, list<string>::iterator* it,list<string>::iterator* end ) :
+    struct ParametroCrearHashMaps {
+        ParametroCrearHashMaps(Lista<ConcurrentHashMap>* hashMaps, list<string>::iterator* it, list<string>::iterator* end) :
         _hashMaps(hashMaps),
         _it(it),
-        _end(end)
-        {
-            _conMutex = false;
+        _end(end) {
         }
-
         Lista<ConcurrentHashMap>* _hashMaps;
         list<string>::iterator* _it;
         list<string>::iterator* _end;
-
-        bool _conMutex;
     };
-	
+
 public:
     Lista<item>* tabla[26];
     ConcurrentHashMap();
@@ -85,7 +78,6 @@ public:
     static ConcurrentHashMap count_words(string arch);
     static ConcurrentHashMap count_words(list<string> archs);
     static ConcurrentHashMap count_words(unsigned int n, list<string> archs);
-    //static item maximum(unsigned int p_maximos, list<string> archs);
     static item maximum2(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
     static item maximum(unsigned int p_archivos, unsigned int p_maximos, list<string> archs);
 
