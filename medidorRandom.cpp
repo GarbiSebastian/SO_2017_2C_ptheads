@@ -7,16 +7,19 @@ using namespace std;
 
 int main(int argc, char **argv) {
     if (argc != 4) {
-        cerr << "uso: " << argv[0] << " #tarchivos #tmaximum" << endl;
+        cerr << "uso: " << argv[0] << " #tarchivos #tmaximum #cantArchivos" << endl;
         return 1;
     }
+    
     pair<string, unsigned int> p;
-    //list<string> l = {"corpus-0", "corpus-1", "corpus-2", "corpus-3", "corpus-4"};
+    
     list<string> l;
     for(unsigned int i = 0; i < atoi(argv[3]); i++){
-        l.push_front("corpus");
+        char nombreArchivo[100];
+        sprintf(nombreArchivo,"archivos/palabras-%u",i);
+        l.push_front(nombreArchivo);
     }
-
+    cout << "terminó lista"  << endl;
     
     clock_t inicio1 = clock();
     p = ConcurrentHashMap::maximum(atoi(argv[1]), atoi(argv[2]), l);

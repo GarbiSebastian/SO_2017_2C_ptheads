@@ -11,7 +11,7 @@ DEBUG = -g
 	$(CXX) $(CXXFLAGS) -c $<
 	$(CXX) $(CXXFLAGS) -c $(DEBUG) $<
 
-BIN = test-1 test-2 test-3 test-4 test-5 test-6 medidor
+BIN = test-1 test-2 test-3 test-4 test-5 test-6 medidorCorpus medidorRandom generador
 OBJ = ConcurrentHashMap.o
 
 all: $(BIN)
@@ -85,21 +85,52 @@ test-6-run: test-6
 	done; done
 	rm -f corpus-max corpus-[0-4]
 	
-medidor: $(OBJ) medidor.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ medidor.cpp $(OBJ) $(LDLIBS)
+medidorCorpus: $(OBJ) medidorCorpus.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ medidorCorpus.cpp $(OBJ) $(LDLIBS)
 
-medidor-run: medidor
+medidorCorpus-run: medidorCorpus
 	rm -f tiempos
 	echo "#hilos_archivos #hilos_max #cant_archivos maximum maximum2" > tiempos
+	for i_archivos in $$(seq 1 5); do \
+	for j_maximum in $$(seq 1 5); do \
+	for k_lista in 1 2 3 4 5; do \
+	./medidorCorpus $$((i_archivos*2)) $$j_maximum $$((k_lista*1000)) 2>> tiempos; \
+	done; \
+	done; \
+	done;
 	for i_archivos in $$(seq 1 20); do \
 	for j_maximum in $$(seq 1 6); do \
-#	for k_lista in 1 2 3 4 5; do \
-#	./medidor $$((i_archivos*2)) $$j_maximum $$((k_lista*1000)) 2>> tiempos; \
-	./medidor $$((i_archivos*20)) $$((j_maximum*4)) 1000 2>> tiempos; \
-#	done; \
+	./medidorCorpus $$((i_archivos*20)) $$((j_maximum*4)) 1000 2>> tiempos; \
+	done; \
+	done;
+	
+medidorRandom: $(OBJ) medidorRandom.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ medidorRandom.cpp $(OBJ) $(LDLIBS)
+
+medidorRandom-run: medidorRandom
+	rm -f tiempos_random
+	echo "#hilos_archivos #hilos_max #cant_archivos maximum maximum2" > tiempos_random
+	for i_archivos in $$(seq 1 5); do \
+	for j_maximum in $$(seq 1 5); do \
+	for k_lista in 1 2 3 4 5; do \
+	./medidorRandom $$((i_archivos*2)) $$j_maximum $$((k_lista*100)) 2>> tiempos_random; \
+	done; \
+	done; \
+	done;
+	for i_archivos in $$(seq 1 20); do \
+	for j_maximum in $$(seq 1 6); do \
+	./medidorRandom $$((i_archivos*20)) $$((j_maximum*4)) 100 2>> tiempos_random; \
 	done; \
 	done;
 
+generador: $(OBJ) generador.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ generador.cpp $(OBJ) $(LDLIBS)
+
+generador-run: generador
+	rm -rf archivos;
+	mkdir archivos;
+	./generador 500 100 500 1 5 0
+	
 clean:
 	rm -f $(BIN) $(OBJ)
 	rm -f corpus-*
