@@ -51,7 +51,9 @@ protected:
         _hashMap(hashMap),
         _it(it),
         _end(end) {
+            pthread_mutex_init(&_tomoArchivo, NULL);
         }
+        pthread_mutex_t _tomoArchivo;
         ConcurrentHashMap* _hashMap;
         list<string>::iterator* _it;
         list<string>::iterator* _end;
@@ -62,7 +64,9 @@ protected:
         _hashMaps(hashMaps),
         _it(it),
         _end(end) {
+            pthread_mutex_init(&_tomoArchivo, NULL);
         }
+        pthread_mutex_t _tomoArchivo;
         Lista<ConcurrentHashMap>* _hashMaps;
         list<string>::iterator* _it;
         list<string>::iterator* _end;

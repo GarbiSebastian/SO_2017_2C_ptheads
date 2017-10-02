@@ -90,10 +90,15 @@ medidor: $(OBJ) medidor.cpp
 
 medidor-run: medidor
 	rm -f tiempos
-	echo "#hilos_archivos #hilos_max #cant_archivos maximum maximum2\n" > tiempos
-	for i_archivos in 1 2 3 4 5; do for j_maximum in 1 2 3 4 5; do for k_lista in 1 2 3 4 5; do \
-	    ./medidor $$((i_archivos*2)) $$j_maximum $$((k_lista*1000)) 2>> tiempos; \
-	done; done; done;	
+	echo "#hilos_archivos #hilos_max #cant_archivos maximum maximum2" > tiempos
+	for i_archivos in $$(seq 1 20); do \
+	for j_maximum in $$(seq 1 6); do \
+#	for k_lista in 1 2 3 4 5; do \
+#	./medidor $$((i_archivos*2)) $$j_maximum $$((k_lista*1000)) 2>> tiempos; \
+	./medidor $$((i_archivos*20)) $$((j_maximum*4)) 1000 2>> tiempos; \
+#	done; \
+	done; \
+	done;
 
 clean:
 	rm -f $(BIN) $(OBJ)

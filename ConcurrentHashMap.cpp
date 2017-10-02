@@ -8,8 +8,6 @@ using namespace std;
 #include <algorithm>
 #include <semaphore.h>
 
-pthread_mutex_t tomoArchivo;
-
 ConcurrentHashMap::ConcurrentHashMap() {
     for (int i = 0; i < maxLength; i++) {
         this->tabla[i] = new Lista<item>();
@@ -208,15 +206,15 @@ void* ConcurrentHashMap::hiloProcesarArchivo(void* parametro) {
 void* ConcurrentHashMap::procesarListaDeArchivos(void* parametro) {
     ParametroProcesarListaDeArchivos* p = (ParametroProcesarListaDeArchivos*) parametro;
     string arch;
-    pthread_mutex_lock(&tomoArchivo);
+    pthread_mutex_lock(&p->_tomoArchivo);
     while (*(p->_it) != *(p->_end)) {
         arch = *(*(p->_it));
         ++(*(p->_it));
-        pthread_mutex_unlock(&tomoArchivo);
+        pthread_mutex_unlock(&p->_tomoArchivo);
         p->_hashMap->procesarArchivo(arch);
-        pthread_mutex_lock(&tomoArchivo);
+        pthread_mutex_lock(&p->_tomoArchivo);
     }
-    pthread_mutex_unlock(&tomoArchivo);
+    pthread_mutex_unlock(&p->_tomoArchivo);
     return NULL;
 }
 
@@ -228,7 +226,6 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
     list<string>::iterator it = archs.begin();
     list<string>::iterator end = archs.end();
     ParametroProcesarListaDeArchivos* parametro = new ParametroProcesarListaDeArchivos(hashMap, &it, &end);
-    pthread_mutex_init(&tomoArchivo, NULL);
     for (unsigned int i = 0; i < cant_hilos; i++) {
         pthread_create(&(hilo[i]), NULL, procesarListaDeArchivos, (void*) parametro);
     }
@@ -241,16 +238,16 @@ ConcurrentHashMap ConcurrentHashMap::count_words(unsigned int n, list<string> ar
 void* ConcurrentHashMap::crear_hashMaps(void* parametro) {
     ParametroCrearHashMaps* p = (ParametroCrearHashMaps*) parametro;
     string arch;
-    pthread_mutex_lock(&tomoArchivo);
+    pthread_mutex_lock(&p->_tomoArchivo);
     while (*(p->_it) != *(p->_end)) {
         arch = *(*(p->_it));
         ++(*(p->_it));
-        pthread_mutex_unlock(&tomoArchivo);
+        pthread_mutex_unlock(&p->_tomoArchivo);
         ConcurrentHashMap hashMap = ConcurrentHashMap::count_words(arch);
         p->_hashMaps->push_front(hashMap);
-        pthread_mutex_lock(&tomoArchivo);
+        pthread_mutex_lock(&p->_tomoArchivo);
     }
-    pthread_mutex_unlock(&tomoArchivo);
+    pthread_mutex_unlock(&p->_tomoArchivo);
     return NULL;
 }
 
@@ -264,7 +261,7 @@ item ConcurrentHashMap::maximum2(unsigned int p_archivos, unsigned int p_maximos
     list<string>::iterator end = archs.end();
     ParametroCrearHashMaps * parametro = new ParametroCrearHashMaps(hashMaps, &it, &end);
     
-    pthread_mutex_init(&tomoArchivo, NULL);
+//    pthread_mutex_init(&tomoArchivo, NULL);
     unsigned int h_id = 0;
     //armo la lista de hashMaps
     for (h_id = 0; h_id < cant_hilos; h_id++) {

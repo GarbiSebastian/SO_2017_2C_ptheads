@@ -44,12 +44,14 @@ nbdist/
 .nb-gradle/
 
 # End of https://www.gitignore.io/api/c++
-/test-5
+/test-1
 /test-2
 /test-3
 /test-4
+/test-5
+/test-6
+/medidor
+/.~*
 /corpus-*
 /salida-test*
-/test-1
-/test-6
 /tiempos-*
