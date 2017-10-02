@@ -11,7 +11,7 @@ DEBUG = -g
 	$(CXX) $(CXXFLAGS) -c $<
 	$(CXX) $(CXXFLAGS) -c $(DEBUG) $<
 
-BIN = test-1 test-2 test-3 test-4 test-5 test-6
+BIN = test-1 test-2 test-3 test-4 test-5 test-6 medidor
 OBJ = ConcurrentHashMap.o
 
 all: $(BIN)
@@ -84,6 +84,16 @@ test-6-run: test-6
 		./test-6 $$((i + 1)) $$((j + 1)) 2>> tiempos-6 | diff -u - corpus-max; \
 	done; done
 	rm -f corpus-max corpus-[0-4]
+	
+medidor: $(OBJ) medidor.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ medidor.cpp $(OBJ) $(LDLIBS)
+
+medidor-run: medidor
+	rm -f tiempos
+	echo "#hilos_archivos #hilos_max #cant_archivos maximum maximum2\n" > tiempos
+	for i_archivos in 1 2 3 4 5; do for j_maximum in 1 2 3 4 5; do for k_lista in 1 2 3 4 5; do \
+	    ./medidor $$((i_archivos*2)) $$j_maximum $$((k_lista*1000)) 2>> tiempos; \
+	done; done; done;	
 
 clean:
 	rm -f $(BIN) $(OBJ)
@@ -94,3 +104,4 @@ clean:
 ConcurrentHashMap.o: ConcurrentHashMap.cpp
 
 test-all-run: test-1-run test-2-run test-3-run test-4-run test-5-run test-6-run
+
